@@ -19,10 +19,19 @@ spec:
       enabled: true
       replicaCount: 1
       
-      # Configure service as LoadBalancer for local network access
+      # Service configuration
       service:
-        type: LoadBalancer
+        type: ClusterIP
         port: 80
+      
+      # Ingress for external access via Traefik
+      ingress:
+        enabled: true
+        className: traefik
+        hosts:
+          - firefly.local  # Access via http://<server-ip> with Host header, or add to /etc/hosts
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: web
       
       # Database configuration
       config:
@@ -70,8 +79,17 @@ spec:
       enabled: true
       
       service:
-        type: LoadBalancer
+        type: ClusterIP
         port: 80
+      
+      # Ingress for external access
+      ingress:
+        enabled: true
+        className: traefik
+        hosts:
+          - importer.local
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: web
       
       fireflyiii:
         url: "http://firefly-iii-firefly-iii:80"
