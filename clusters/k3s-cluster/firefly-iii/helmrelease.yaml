@@ -19,19 +19,15 @@ spec:
       enabled: true
       replicaCount: 1
       
-      # Service configuration
+      # Use NodePort to expose on server IP
       service:
-        type: ClusterIP
+        type: NodePort
         port: 80
+        nodePort: 30080  # Access via http://10.0.0.3:30080
       
-      # Ingress for external access via Traefik
+      # Disable ingress since no Traefik
       ingress:
-        enabled: true
-        className: traefik
-        hosts:
-          - firefly.local  # Access via http://<server-ip> with Host header, or add to /etc/hosts
-        annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: web
+        enabled: false
       
       # Database configuration
       config:
@@ -79,17 +75,13 @@ spec:
       enabled: true
       
       service:
-        type: ClusterIP
+        type: NodePort
         port: 80
+        nodePort: 30081  # Access via http://10.0.0.3:30081
       
-      # Ingress for external access
+      # Disable ingress since no Traefik
       ingress:
-        enabled: true
-        className: traefik
-        hosts:
-          - importer.local
-        annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: web
+        enabled: false
       
       fireflyiii:
         url: "http://firefly-iii-firefly-iii:80"
