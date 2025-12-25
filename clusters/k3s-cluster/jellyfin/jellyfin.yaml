@@ -1,0 +1,122 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: media
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jellyfin
+  namespace: media
+  labels:
+    app: jellyfin
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Important for hostPath volumes
+  selector:
+    matchLabels:
+      app: jellyfin
+  template:
+    metadata:
+      labels:
+        app: jellyfin
+    spec:
+      # Target the node with encrypted media storage
+      nodeSelector:
+        node.kubernetes.io/capability: media-storage
+      
+      containers:
+      - name: jellyfin
+        image: jellyfin/jellyfin:latest
+        ports:
+        - containerPort: 8096
+          name: http
+          protocol: TCP
+        - containerPort: 8920
+          name: https
+          protocol: TCP
+        - containerPort: 1900
+          name: dlna
+          protocol: UDP
+        - containerPort: 7359
+          name: discovery
+          protocol: UDP
+        
+        env:
+        - name: TZ
+          value: "UTC"  # Change to your timezone
+        # Use SealedSecrets or external-secrets for sensitive configuration
+        # Example:
+        # - name: JELLYFIN_PublishedServerUrl
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: jellyfin-secrets
+        #       key: published-server-url
+        
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: cache
+          mountPath: /cache
+        - name: media
+          mountPath: /data
+          readOnly: true  # Read-only for safety
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8096
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8096
+          initialDelaySeconds: 30
+          periodSeconds: 5
+      
+      volumes:
+      # Encrypted media from external SSD (managed by Ansible)
+      - name: media
+        hostPath:
+          path: /mnt/media
+          type: Directory
+      
+      # Configuration storage (consider using PVC for better portability)
+      - name: config
+        hostPath:
+          path: /opt/jellyfin/config
+          type: DirectoryOrCreate
+      
+      # Cache storage
+      - name: cache
+        hostPath:
+          path: /opt/jellyfin/cache
+          type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyfin
+  namespace: media
+spec:
+  type: NodePort  # Expose via NodePort like Firefly
+  selector:
+    app: jellyfin
+  ports:
+  - name: http
+    port: 8096
+    targetPort: 8096
+    nodePort: 30096
+    protocol: TCP
