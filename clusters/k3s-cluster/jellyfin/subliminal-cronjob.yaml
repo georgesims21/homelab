@@ -1,0 +1,63 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: subliminal-subtitles
+  namespace: media
+spec:
+  # Run every 6 hours
+  schedule: "0 */6 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid  # Don't run multiple instances simultaneously
+  
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: subliminal
+        spec:
+          # Target the node with media storage
+          nodeSelector:
+            node.kubernetes.io/capability: media-storage
+          
+          restartPolicy: OnFailure
+          
+          containers:
+          - name: subliminal
+            image: python:3.11-slim
+            
+            command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              echo "Installing subliminal..."
+              pip install --no-cache-dir subliminal
+              
+              echo "Starting subtitle download at $(date)"
+              echo "Scanning /media for videos..."
+              
+              # Download English subtitles for all videos
+              subliminal download -l en /media
+              
+              echo "Subtitle download completed at $(date)"
+            
+            volumeMounts:
+            - name: media
+              mountPath: /media
+            
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+          
+          volumes:
+          - name: media
+            hostPath:
+              path: /mnt/media
+              type: Directory
