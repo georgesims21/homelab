@@ -33,15 +33,116 @@ spec:
             - -c
             - |
               set -e
-              echo "Installing subliminal..."
-              pip install --no-cache-dir subliminal
+              echo "Installing dependencies..."
+              pip install --no-cache-dir subliminal babelfish
               
               echo "Starting subtitle download at $(date)"
-              echo "Scanning /media for videos..."
               
-              # Download English subtitles for all videos
-              subliminal download -l en /media
+              # Create the Python script
+              cat > /tmp/download_subtitles.py << 'PYTHON_SCRIPT'
+              #!/usr/bin/env python3
               
+              import os
+              import sys
+              from babelfish import Language
+              from subliminal import download_best_subtitles, region, save_subtitles, scan_video
+              
+              # Configure subliminal cache for better performance
+              region.configure('dogpile.cache.dbm', arguments={'filename': '/tmp/subliminal_cache.dbm'})
+              
+              # Supported video extensions
+              VIDEO_EXTENSIONS = ('.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v')
+              
+              def download_subtitles_for_directory(directory, languages=['eng']):
+                  """
+                  Recursively scan a directory for video files and download subtitles if missing.
+                  """
+                  videos_processed = 0
+                  videos_skipped = 0
+                  subtitles_downloaded = 0
+                  errors = 0
+                  
+                  print(f"Scanning directory: {directory}")
+                  print(f"Looking for languages: {', '.join(languages)}")
+                  print("-" * 60)
+                  
+                  for root, _, files in os.walk(directory):
+                      for file in files:
+                          # Skip hidden or system files
+                          if file.startswith('.') or file.startswith('._'):
+                              continue
+                          
+                          if file.lower().endswith(VIDEO_EXTENSIONS):
+                              video_path = os.path.join(root, file)
+                              subtitle_path = os.path.splitext(video_path)[0] + '.srt'
+                              
+                              # Skip if subtitles already exist
+                              if os.path.exists(subtitle_path):
+                                  videos_skipped += 1
+                                  print(f"[SKIP] Already has subtitles: {os.path.relpath(video_path, directory)}")
+                                  continue
+                              
+                              videos_processed += 1
+                              print(f"[PROCESSING] {os.path.relpath(video_path, directory)}")
+                              
+                              try:
+                                  # Scan the video file for metadata
+                                  video = scan_video(video_path)
+                                  if not video:
+                                      print(f"[ERROR] Could not scan video: {video_path}")
+                                      errors += 1
+                                      continue
+                                  
+                                  # Download best matching subtitles
+                                  subtitles = download_best_subtitles(
+                                      [video], 
+                                      {Language(lang) for lang in languages},
+                                      hearing_impaired=False
+                                  )
+                                  
+                                  if video in subtitles and subtitles[video]:
+                                      save_subtitles(video, subtitles[video])
+                                      subtitles_downloaded += 1
+                                      print(f"[SUCCESS] Downloaded {len(subtitles[video])} subtitle(s)")
+                                  else:
+                                      print(f"[NOT FOUND] No subtitles available")
+                                      
+                              except Exception as e:
+                                  errors += 1
+                                  print(f"[ERROR] {str(e)}")
+                  
+                  # Print summary
+                  print("-" * 60)
+                  print(f"SUMMARY:")
+                  print(f"  Videos processed: {videos_processed}")
+                  print(f"  Videos skipped (already have subs): {videos_skipped}")
+                  print(f"  Subtitles downloaded: {subtitles_downloaded}")
+                  print(f"  Errors: {errors}")
+                  
+                  return subtitles_downloaded
+              
+              if __name__ == "__main__":
+                  directory = "/media"
+                  languages = ["eng", "spa"]
+                  
+                  if not os.path.isdir(directory):
+                      print(f"ERROR: Directory not found: {directory}")
+                      sys.exit(1)
+                  
+                  try:
+                      download_subtitles_for_directory(directory, languages=languages)
+                  except KeyboardInterrupt:
+                      print("\nInterrupted by user")
+                      sys.exit(1)
+                  except Exception as e:
+                      print(f"FATAL ERROR: {e}")
+                      sys.exit(1)
+              PYTHON_SCRIPT
+              
+              # Run the script
+              python3 /tmp/download_subtitles.py
+              
+              echo ""
               echo "Subtitle download completed at $(date)"
             
             volumeMounts:
@@ -50,11 +151,11 @@ spec:
             
             resources:
               requests:
-                memory: "128Mi"
-                cpu: "100m"
+                memory: "256Mi"
+                cpu: "200m"
               limits:
-                memory: "512Mi"
-                cpu: "500m"
+                memory: "1Gi"
+                cpu: "1000m"
           
           volumes:
           - name: media
