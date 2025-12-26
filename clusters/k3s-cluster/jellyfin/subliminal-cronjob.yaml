@@ -139,8 +139,8 @@ spec:
                       sys.exit(1)
               PYTHON_SCRIPT
               
-              # Run the script
-              python3 /tmp/download_subtitles.py
+              # Run the script with unbuffered output
+              python3 -u /tmp/download_subtitles.py
               
               echo ""
               echo "Subtitle download completed at $(date)"
