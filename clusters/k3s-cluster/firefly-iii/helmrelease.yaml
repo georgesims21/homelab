@@ -54,7 +54,7 @@ spec:
         schedule: "0 3 * * *"
         auth:
           existingSecret: firefly-iii-secrets
-          secretKey: STATIC_CRON_TOKEN
+          secretKey: token
     
     # PostgreSQL database configuration
     firefly-db:
@@ -88,7 +88,7 @@ spec:
         url: "http://firefly-iii-firefly-iii:80"
         auth:
           existingSecret: firefly-iii-secrets
-          secretKey: FIREFLY_III_ACCESS_TOKEN
+          secretKey: accessToken
       
       config:
         env:
