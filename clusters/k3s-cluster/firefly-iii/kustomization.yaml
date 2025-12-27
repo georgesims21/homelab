@@ -4,4 +4,5 @@ namespace: firefly-iii
 resources:
   - namespace.yaml
   - helmrepo.yaml
+  - secret.yaml
   - helmrelease.yaml

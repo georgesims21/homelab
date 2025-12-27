@@ -53,7 +53,8 @@ spec:
         enabled: true
         schedule: "0 3 * * *"
         auth:
-          token: ""  # You should set this to a random token
+          existingSecret: firefly-iii-secrets
+          secretKey: STATIC_CRON_TOKEN
     
     # PostgreSQL database configuration
     firefly-db:
@@ -86,7 +87,8 @@ spec:
       fireflyiii:
         url: "http://firefly-iii-firefly-iii:80"
         auth:
-          accessToken: ""  # You need to generate this from Firefly III web UI
+          existingSecret: firefly-iii-secrets
+          secretKey: FIREFLY_III_ACCESS_TOKEN
       
       config:
         env:
