@@ -85,7 +85,7 @@ spec:
         enabled: false
       
       fireflyiii:
-        url: "http://firefly-iii-firefly-iii:80"
+        url: "http://firefly-iii-firefly-iii.firefly-iii.svc.cluster.local"
         auth:
           existingSecret: firefly-iii-secrets
           secretKey: accessToken
