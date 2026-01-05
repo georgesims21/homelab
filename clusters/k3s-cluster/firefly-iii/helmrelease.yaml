@@ -86,10 +86,16 @@ spec:
       
       fireflyiii:
         url: "http://firefly-iii.firefly-iii.svc.cluster.local"
-        auth:
-          existingSecret: firefly-iii-secrets
+        vanityUrl: "http://10.0.0.3:30080"
       
       config:
         env:
           TZ: UTC
           IGNORE_DUPLICATE_ERRORS: "false"
+          FIREFLY_III_URL: "http://firefly-iii.firefly-iii.svc.cluster.local"
+          VANITY_URL: "http://10.0.0.3:30080"
+        envValueFrom:
+          FIREFLY_III_ACCESS_TOKEN:
+            secretKeyRef:
+              name: firefly-iii-secrets
+              key: accessToken
