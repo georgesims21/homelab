@@ -13,6 +13,10 @@ spec:
         kind: HelmRepository
         name: firefly-iii
         namespace: firefly-iii
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: firefly-iii-config
   values:
     # Enable Firefly III components
     firefly-iii:
@@ -23,7 +27,7 @@ spec:
       service:
         type: NodePort
         port: 80
-        nodePort: 30080  # Access via http://10.0.0.3:30080
+        nodePort: ${FIREFLY_NODEPORT}
       
       # Disable ingress since no Traefik
       ingress:
@@ -78,22 +82,22 @@ spec:
       service:
         type: NodePort
         port: 80
-        nodePort: 30081  # Access via http://10.0.0.3:30081
+        nodePort: ${IMPORTER_NODEPORT}
       
       # Disable ingress since no Traefik
       ingress:
         enabled: false
       
       fireflyiii:
-        url: "http://firefly-iii.firefly-iii.svc.cluster.local"
-        vanityUrl: "http://10.0.0.3:30080"
+        url: "http://firefly-iii.firefly-iii.svc.${CLUSTER_DOMAIN}"
+        vanityUrl: "http://${SERVER_IP}:${FIREFLY_NODEPORT}"
       
       config:
         env:
           TZ: UTC
           IGNORE_DUPLICATE_ERRORS: "false"
-          FIREFLY_III_URL: "http://firefly-iii.firefly-iii.svc.cluster.local"
-          VANITY_URL: "http://10.0.0.3:30080"
+          FIREFLY_III_URL: "http://firefly-iii.firefly-iii.svc.${CLUSTER_DOMAIN}"
+          VANITY_URL: "http://${SERVER_IP}:${FIREFLY_NODEPORT}"
         envValueFrom:
           FIREFLY_III_ACCESS_TOKEN:
             secretKeyRef:
