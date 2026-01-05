@@ -3,6 +3,11 @@ kind: ConfigMap
 metadata:
   name: firefly-iii-config
   namespace: firefly-iii
+  annotations:
+    description: |
+      Configuration values for Firefly III deployment.
+      NOTE: This ConfigMap is for documentation only until Flux is upgraded to v0.32.0+
+      Update helmrelease.yaml when changing these values.
 data:
   SERVER_IP: "10.0.0.3"
   FIREFLY_NODEPORT: "31716"
